@@ -81,7 +81,12 @@ Dijkstra.prototype.findRoute = function(callback){
 Dijkstra.prototype.generateResult = function() {
     var destData = this.getStationData(this.dest);
     if(!destData.definite) {
-        return [];
+        return {
+            instructions: [],
+            distance: 0,
+            origin: this.origin,
+            dest: this.dest
+        };
     } else {
         var r = [];
         var lastLine = null;
@@ -122,7 +127,9 @@ Dijkstra.prototype.generateResult = function() {
         r.reverse();
         return {
             instructions: r,
-            distance: destData.distance
+            distance: destData.distance,
+            origin: this.origin,
+            dest: this.dest
         };
     }
 }

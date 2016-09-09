@@ -53,12 +53,59 @@
             h2 导航
             p 请选择起点与终点
             label(for="navi-form-origin") <b>起点</b>
-            input#navi-form-origin(type=text v-bind:value="data.stations[naviForm.origin].name" v-on:focus="vmSelectStation(naviForm.origin)" readonly)
+            input#navi-form-origin(type=text 
+                v-bind:value="data.stations[naviForm.origin].name" 
+                v-on:focus="vmSelectStation(naviForm.origin)" readonly
+            )
             br
             label(for="navi-form-dest") <b>终点</b>
-            input#navi-form-dest(type=text v-bind:value="data.stations[naviForm.dest].name" v-on:focus="vmSelectStation(naviForm.dest)" readonly)
+            input#navi-form-dest(type=text 
+                v-bind:value="data.stations[naviForm.dest].name" 
+                v-on:focus="vmSelectStation(naviForm.dest)" readonly
+            )
             br
             a.btn(href="javascript:void(0)" @click="vmStartNavi") 开始导航
+            div.navi-list(v-if="naviStatus")
+                h3 导航结果
+                div.navi-item(
+                    v-on:mouseover="vmHighlightAllNaviPaths()"
+                    v-on:mouseout="vmHighlightPaths()"
+                )
+                    span 起点&nbsp;
+                    a(href="javascript:void(0)"
+                        v-on:click="vmSelectStation(naviResult.origin)"
+                    )
+                        | {{data.stations[naviResult.origin].name}}
+                div.navi-item(v-for="(i,item) in naviResult.instructions"
+                    v-on:mouseover="vmHighlightPaths(item.paths)"
+                    v-on:mouseout="vmHighlightPaths()"
+                )
+                    span(v-if="i==0") 乘坐&nbsp;
+                    span(v-if="i!=0") 换乘&nbsp;
+                    span.color-indicator(v-bind:style="{color: item.color}")
+                    | {{item.lineName}}
+                    | {{item.paths.length}}站
+                    | 到&nbsp;
+                    a(href="javascript:void(0)"
+                        v-on:click="vmSelectStation(item.endStationId)"
+                    )
+                        | {{data.stations[item.endStationId].name}}
+                div.navi-item(
+                    v-on:mouseover="vmHighlightAllNaviPaths()"
+                    v-on:mouseout="vmHighlightPaths()"
+                )
+                    span(v-if="naviResult.instructions.length>0") 到达终点&nbsp;
+                    span(v-else) 无法到达终点&nbsp;
+                    a(href="javascript:void(0)"
+                        v-on:click="vmSelectStation(naviResult.dest)"
+                    )
+                        | {{data.stations[naviResult.dest].name}}
+                    span(v-if="naviResult.distance") &nbsp;乘车长度{{naviResult.distance}}
+        div.form-group.copyright
+            h1 地下鉄プランナ
+            p 地铁线路设计导航工具
+            p 《数据结构》课程设计作品
+            p &copy; 2016 Archie Lu.
 </template>
 
 <script>
@@ -108,7 +155,9 @@ module.exports={
             naviForm: {
                 origin: '',
                 dest: ''
-            }
+            },
+            naviStatus: 0,
+            naviResult: null
         }
     },
     ready() {
@@ -239,6 +288,32 @@ module.exports={
                 vm.clearCanvas(vm.ctx5);
             }
         },
+        vmHighlightPaths(paths=[], naviPaths=true) {
+            if(paths.length<=0) {
+                this.vmHighlightPath();
+            } else {
+                var vm = this;
+                vm.clearCanvas(vm.ctx5);
+                if(naviPaths)
+                    this.vmHighlightAllNaviPaths();
+                for(var pid of paths) {
+                    var path = vm.data.paths[pid];
+                    vm.drawPathLine(vm.ctx5, path.data, '#fff');
+                }
+            }
+        },
+        vmHighlightAllNaviPaths() {
+            var p = [];
+            for(var item of this.naviResult.instructions) {
+                var p = p.concat(item.paths);
+            }
+
+            var vm = this;
+            for(var pid of p) {
+                var path = vm.data.paths[pid];
+                vm.drawPathLine(vm.ctx5, path.data, '#000');
+            }
+        },
         vmSelectAsOrigin() {
             var vm = this;
             var station = vm.data.stations[vm.procedure.curStation];
@@ -269,9 +344,12 @@ module.exports={
         },
         vmStartNavi() {
             var djk = new Dijkstra(this.naviForm.origin, this.naviForm.dest);
-            console.log(djk);
+            var vm = this;
+            vm.naviStatus = 0;
             djk.findRoute((pathTable)=>{
-                console.log(djk.generateResult());
+                vm.naviResult = djk.generateResult();
+                console.log(vm.naviResult);
+                vm.naviStatus = 1;
             });
         },
         addStation(pid, name) {
@@ -595,7 +673,20 @@ input, select {
     padding: 20px;
     border: 5px solid #000;
     margin: 10px;
-    h2 {
+    &.copyright {
+        border-color: #F39231;
+        color: #F39231;
+        line-height: 1.1;
+        padding: 5px;
+        h1 {
+            text-align: left;
+        }
+        p {
+            text-align: right;
+            margin: 0;
+        }
+    }
+    h1, h2 {
         margin: 0;
         -moz-user-select     : none;
         -khtml-user-select   : none;
@@ -624,6 +715,23 @@ input, select {
     .line-path {
         &:hover {
             background: #eee;
+        }
+    }
+    .navi-list {
+        .navi-item {
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-left: 10px;
+            border-bottom: 1px solid #eee;
+            border-left: 3px solid #ddd;
+            &:hover {
+                border-left: 3px solid #000;
+                background-color: #eee;
+            }
+        }
+        .navi-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
         }
     }
 }
