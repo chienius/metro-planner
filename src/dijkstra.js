@@ -1,4 +1,4 @@
-import mapData from './mapData'
+import mapData from './mapdata1'
 
 function Dijkstra(origin, dest) {
     this.origin = origin;
@@ -35,14 +35,16 @@ Dijkstra.prototype.findRoute = function(callback){
         var relations = mapData.relations[this_.lastDefiniteStationId];
         var lastDefiniteStationData = this_.getStationData(this_.lastDefiniteStationId);
         for(var i in relations) {
-            if(relations[i]!=null && relations[i]>=0) {
+            if(relations[i]!=null && relations[i] instanceof Array) {
                 var relation = relations[i];
-                var targetStationData = this_.getStationData(i);
-                var path = mapData.paths[relation];
-                var distance = lastDefiniteStationData.distance + path.data.length;
-                if(!targetStationData.definite && distance < targetStationData.distance) {
-                    targetStationData.distance = distance;
-                    targetStationData.lastStation = this_.lastDefiniteStationId;
+                for(var path_id of relation) {
+                    var targetStationData = this_.getStationData(i);
+                    var path = mapData.paths[path_id];
+                    var distance = lastDefiniteStationData.distance + path.data.length;
+                    if(!targetStationData.definite && distance < targetStationData.distance) {
+                        targetStationData.distance = distance;
+                        targetStationData.lastStation = this_.lastDefiniteStationId;
+                    }
                 }
             }
         }
@@ -79,6 +81,7 @@ Dijkstra.prototype.findRoute = function(callback){
 }
 
 Dijkstra.prototype.generateResult = function() {
+    console.log(this);
     var destData = this.getStationData(this.dest);
     if(!destData.definite) {
         return {
@@ -99,7 +102,23 @@ Dijkstra.prototype.generateResult = function() {
             var lastStationData = this.getStationData(lastStationId);
             var nextStationId = lastStationData.lastStation;
             var relation = mapData.relations[lastStationId][nextStationId];
-            var path = mapData.paths[relation];
+            var path = null;
+            var d_path_id = null;
+            var pl = Infinity;
+
+            for(var path_id of relation) {
+                var path_t = mapData.paths[path_id];
+                if(path_t.data.length < pl) {
+                    pl = path_t.data.length;
+                    path = path_t;
+                    d_path_id = path_id;
+                } else if(path_t.data.length == pl) {
+                    if(path_t.line_name == lastLine) {
+                        path = path_t;
+                        d_path_id = path_id;
+                    }
+                }
+            }
 
             if(path.line_name != lastLine) {
                 var rdata = {
@@ -117,7 +136,7 @@ Dijkstra.prototype.generateResult = function() {
                 paths = new Array();
             }
 
-            paths.push(relation);
+            paths.push(d_path_id);
 
             lastStationId = nextStationId;
         }

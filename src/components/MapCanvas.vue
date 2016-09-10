@@ -33,15 +33,18 @@
                 a.btn(href="javascript:void(0)", @click="vmRemoveStation") 删除站点
                 div
                     h3 到当前站点的路径
-                    div.line-path(v-for="(dest_id, path_id) in data.relations[procedure.curStation]"
-                        track-by="$index" v-if="path_id != null && path_id>=0"
-                        v-on:mouseover="vmHighlightPath(path_id)"
-                        v-on:mouseout="vmHighlightPath()")
-                        span.color-indicator(v-bind:style="{color: data.paths[path_id].color}")
-                        | {{data.paths[path_id].line_name}}
-                        | 到 
-                        a(href="javascript:void(0)" v-on:click="vmSelectStation(dest_id)") {{data.stations[dest_id].name}}
-                        |  长度{{data.paths[path_id].data.length}}
+                    div(v-for="(dest_id, paths) in data.relations[procedure.curStation]"
+                        track-by="$index" v-if="paths!=undefined && paths != null"
+                    )
+                        div.line-path(v-for="path_id in paths"
+                            v-on:mouseover="vmHighlightPath(path_id)"
+                            v-on:mouseout="vmHighlightPath()"
+                        )
+                            span.color-indicator(v-bind:style="{color: data.paths[path_id].color}")
+                            | {{data.paths[path_id].line_name}}
+                            | 到 
+                            a(href="javascript:void(0)" v-on:click="vmSelectStation(dest_id)") {{data.stations[dest_id].name}}
+                            |  长度{{data.paths[path_id].data.length}}
     div.canvas-group
         canvas.design-canvas#design-canvas-1
         canvas.design-canvas#design-canvas-2
@@ -111,7 +114,7 @@
 
 <script>
 import $ from 'jquery'
-import mapData from '../mapData'
+import mapData from '../mapdata1'
 import Dijkstra from '../dijkstra'
 
 module.exports={
@@ -272,7 +275,12 @@ module.exports={
             var vm = this;
             delete vm.data.stations[vm.procedure.curStation];
             vm.data.relations[vm.procedure.curStation].forEach(function(p, i){
-                if(p!=null && p>=0) {vm.data.paths[p]=undefined; delete vm.data.relations[i][vm.procedure.curStation]}
+                if(p!=null && p instanceof Array) {
+                    for(var j of p) {
+                        vm.data.paths[j]=undefined;
+                    }
+                    delete vm.data.relations[i][vm.procedure.curStation]
+                }
             });
             delete vm.data.relations[vm.procedure.curStation];
             vm.resetPaths();
@@ -358,6 +366,7 @@ module.exports={
             mapData.stations = [];
             mapData.paths = [];
             mapData.relations = [];
+            vm.naviStatus = 0;
             //mapData = {
                 //'stations': [],
                 //'paths': [], // {color: <colorCode>, line_name: '1号线', data: [<pid>]}
@@ -433,19 +442,22 @@ module.exports={
                     line_name: line['name'],
                     data: vm.procedure.path
                 };
-                if(vm.data.relations[first_pid][last_pid]!= null && vm.data.relations[last_pid][first_pid]!=null && (vm.data.relations[first_pid][last_pid]>=0 || vm.data.relations[last_pid][first_pid]>=0)) {
-                    vm.resetPaths();
-                } else {
-                    vm.data.paths.push(data);
-                    var last_path_id = vm.data.paths.length-1;
-                    vm.data.relations[first_pid][last_pid] = last_path_id;
-                    vm.data.relations[last_pid][first_pid] = last_path_id;
-                    var a = vm.data.relations[first_pid].slice();
-                    var b = vm.data.relations[last_pid].slice();
-                    vm.data.relations.$set(first_pid, a);
-                    vm.data.relations.$set(last_pid, b);
-                    vm.resetPaths();
+
+                vm.data.paths.push(data);
+                var last_path_id = vm.data.paths.length-1;
+                var oldPaths = vm.data.relations[first_pid][last_pid];
+                if( !oldPaths || !(oldPaths instanceof Array) ) {
+                    oldPaths = [];
                 }
+                oldPaths.push(last_path_id);
+                vm.data.relations[first_pid][last_pid] = oldPaths;
+                vm.data.relations[last_pid][first_pid] = oldPaths;
+                var a = vm.data.relations[first_pid].slice();
+                var b = vm.data.relations[last_pid].slice();
+                vm.data.relations.$set(first_pid, a);
+                vm.data.relations.$set(last_pid, b);
+                vm.resetPaths();
+
             } else {
                 vm.resetPaths();
             }
