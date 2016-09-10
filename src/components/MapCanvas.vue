@@ -21,6 +21,7 @@
             div(v-if="procedure.stage == 0").stage-0
                 p 请在图中选择一个站点进行操作，或者新建站点
                 a.btn(href="javascript:void(0)", @click="vmAddStation") 新建站点
+                a.btn(href="javascript:void(0)", @click="vmClearMap") 清除地图
             div(v-if="procedure.stage == 1").stage-1
                 p 请在绘制工具中新建站点
                 a.btn(href="javascript:void(0)", @click="vmCancelProcedure") 取消新建
@@ -130,7 +131,7 @@ module.exports={
                 'path': []
             },
             data: mapData,
-            //data: {
+            //cleanData: {
                 //'stations': [],
                 //'paths': [], // {color: <colorCode>, line_name: '1号线', data: [<pid>]}
                 //'relations': [] // {path: <path>}
@@ -352,6 +353,19 @@ module.exports={
                 vm.naviStatus = 1;
             });
         },
+        vmClearMap() {
+            var vm = this;
+            mapData.stations = [];
+            mapData.paths = [];
+            mapData.relations = [];
+            //mapData = {
+                //'stations': [],
+                //'paths': [], // {color: <colorCode>, line_name: '1号线', data: [<pid>]}
+                //'relations': [] // {path: <path>}
+            //}
+            vm.resetPaths();
+            vm.resetStations();
+        },
         addStation(pid, name) {
             var vm =this;
             var coor = vm.id2Coor(pid);
@@ -375,7 +389,7 @@ module.exports={
                     vm.drawBlock(vm.ctx2, coor[0], coor[1], color);
                 } else {
                     // Invalid
-                    vm.drawPath(vm.ctx2, vm.procedure.path);
+                    vm.resetPaths();
                     vm.mousePressed = false;
                 }
             }
