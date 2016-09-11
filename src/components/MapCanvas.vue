@@ -69,6 +69,7 @@
             )
             br
             a.btn(href="javascript:void(0)" @click="vmStartNavi") 开始导航
+            a.btn(href="javascript:void(0)" @click="vmClearNavi") 清除导航
             div.navi-list(v-if="naviStatus")
                 h3 导航结果
                 div.navi-item(
@@ -374,6 +375,11 @@ module.exports={
             //}
             vm.resetPaths();
             vm.resetStations();
+        },
+        vmClearNavi() {
+            this.naviForm.origin = null;
+            this.naviForm.dest = null;
+            this.naviStatus = 0;
         },
         addStation(pid, name) {
             var vm =this;
