@@ -2,6 +2,10 @@
 
 > Metro Planner by Chienius.
 
+A "Data Structure" Course Experiment Project.
+
+Simple Metro Line Planner based on Canvas & Vue.
+
 ## Build Setup
 
 ``` bash
