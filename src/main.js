@@ -7,7 +7,7 @@ new Vue({
     el: 'body',
     components: { App },
     ready(){
-        this.changeTitle("Metro Planner by Chienius")
+        this.changeTitle("Metro Planner")
     },
     methods: {
         changeTitle(title){
